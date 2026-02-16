@@ -1,0 +1,1211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Global CSV Cleaner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f9f6f1;
+        --bg-deep: #ece5db;
+        --ink: #1e2629;
+        --muted: #4a5a5f;
+        --accent: #de6320;
+        --accent-soft: #ffd9b6;
+        --line: #d6c9b8;
+        --ok: #0f766e;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        background: radial-gradient(circle at 10% 10%, #fff8ef 0%, var(--bg) 45%, var(--bg-deep) 100%);
+        color: var(--ink);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      .layout {
+        width: min(1100px, 92vw);
+        margin: 0 auto;
+        padding: 24px 0 48px;
+        display: grid;
+        gap: 18px;
+        overflow-x: hidden;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 10px 30px rgba(59, 42, 22, 0.08);
+        animation: rise 500ms ease both;
+      }
+
+      .card:nth-of-type(2) {
+        animation-delay: 120ms;
+      }
+
+      .card:nth-of-type(3) {
+        animation-delay: 220ms;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(1.5rem, 2.5vw, 2.2rem);
+        line-height: 1.1;
+      }
+
+      .sub {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .rules {
+        margin: 12px 0 0;
+        padding-left: 18px;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      @media (max-width: 880px) {
+        .grid,
+        .grid.three {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      label {
+        font-size: 0.88rem;
+        color: var(--muted);
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      input,
+      select,
+      button {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        font-family: "Space Grotesk", sans-serif;
+        padding: 11px 12px;
+        font-size: 0.96rem;
+        line-height: 1.2;
+        -webkit-text-fill-color: currentColor;
+      }
+
+      input:focus,
+      select:focus {
+        outline: 2px solid var(--accent-soft);
+        border-color: var(--accent);
+      }
+
+      .actions {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr;
+        margin-top: 12px;
+      }
+
+      .download-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        margin-top: 6px;
+      }
+
+      .download-actions button {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        text-align: center;
+        color: var(--ink);
+        font-weight: 700;
+      }
+
+      .downloads-card {
+        position: relative;
+        z-index: 3;
+      }
+
+      .downloads-title {
+        margin: 0 0 8px;
+        font-size: 1rem;
+      }
+
+      .primary {
+        background: linear-gradient(140deg, var(--accent) 0%, #c84a0f 100%);
+        color: #fff;
+        border: 0;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .ghost {
+        border: 1px solid var(--line);
+        background: #fffaf3;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      button[disabled] {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .stat {
+        background: #fffaf3;
+        border: 1px dashed #d8b794;
+        border-radius: 12px;
+        padding: 10px;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 1.3rem;
+        font-family: "IBM Plex Mono", monospace;
+      }
+
+      .table-shell {
+        margin-top: 12px;
+        overflow: auto;
+        max-width: 100%;
+        overscroll-behavior-x: contain;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      table {
+        width: max-content;
+        min-width: 100%;
+        border-collapse: collapse;
+      }
+
+      .preview-card {
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        padding: 9px 10px;
+        border-bottom: 1px solid #efe6da;
+        text-align: left;
+        font-size: 0.88rem;
+        white-space: nowrap;
+      }
+
+      th {
+        background: #fff6ea;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+
+      .msg {
+        margin-top: 10px;
+        font-size: 0.92rem;
+        color: var(--ok);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="layout">
+      <section class="card">
+        <h1>Global CSV Phone & Email Cleaner</h1>
+        <p class="sub">
+          Upload your records CSV, clean phone/email fields, then remove duplicates by <strong>phone OR email</strong>.
+        </p>
+        <ul class="rules">
+          <li>Phone cleaning: remove symbols, spaces, repeated country code (like <code>971971...</code>), and zeros after country code.</li>
+          <li>Email cleaning: lowercase + common typo fix (for example <code>gamil.com</code>, <code>gmial.com</code>, <code>gmail,com</code>).</li>
+          <li>Dedup rule: keep the most complete record (prefer records with both phone and email).</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <div class="grid">
+          <div>
+            <label for="contactsFile">Contacts CSV (required)</label>
+            <input id="contactsFile" type="file" accept=".csv,text/csv" />
+          </div>
+          <div>
+            <label for="countriesFile">Countries Guide CSV (optional but recommended)</label>
+            <input id="countriesFile" type="file" accept=".csv,text/csv" />
+          </div>
+        </div>
+
+        <div class="grid three" style="margin-top: 10px">
+          <div>
+            <label for="phoneCol">Phone column</label>
+            <select id="phoneCol"></select>
+          </div>
+          <div>
+            <label for="emailCol">Email column</label>
+            <select id="emailCol"></select>
+          </div>
+          <div>
+            <label for="countryCol">Country column (optional)</label>
+            <select id="countryCol"></select>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top: 10px">
+          <div>
+            <label for="defaultCode">Default country code (optional, example: 971)</label>
+            <input id="defaultCode" type="text" placeholder="971" />
+          </div>
+          <div>
+            <label for="appendCols">Output options</label>
+            <select id="appendCols">
+              <option value="no">Keep original columns only</option>
+              <option value="yes">Append normalized_phone and normalized_email</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid" style="margin-top: 10px">
+          <div>
+            <label for="tagValue">TAG value (optional)</label>
+            <input id="tagValue" type="text" placeholder="SEF-2026-LEADS" />
+          </div>
+          <div></div>
+        </div>
+
+        <div class="grid" style="margin-top: 10px">
+          <div>
+            <label for="previewMode">Preview mode</label>
+            <select id="previewMode">
+              <option value="both">Deduplicate by Email OR Number</option>
+              <option value="email">Deduplicate by Email only</option>
+              <option value="phone">Deduplicate by Number only</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
+
+        <div class="actions">
+          <button id="cleanBtn" class="primary" disabled>Clean + Build 3 Outputs</button>
+        </div>
+      </section>
+
+      <section class="card downloads-card">
+        <h2 class="downloads-title">Downloads</h2>
+        <div class="download-actions">
+          <button id="downloadEmailBtn" class="ghost" disabled>Download Email Dedupe</button>
+          <button id="downloadPhoneBtn" class="ghost" disabled>Download Number Dedupe</button>
+          <button id="downloadBothBtn" class="ghost" disabled>Download Email + Number Dedupe</button>
+        </div>
+        <div id="message" class="msg"></div>
+      </section>
+
+      <section class="card preview-card">
+        <div class="stats">
+          <div class="stat">
+            <span>Input rows</span>
+            <strong id="inputCount">0</strong>
+          </div>
+          <div class="stat">
+            <span>Output rows</span>
+            <strong id="outputCount">0</strong>
+          </div>
+          <div class="stat">
+            <span>Duplicates removed</span>
+            <strong id="removedCount">0</strong>
+          </div>
+        </div>
+        <div class="table-shell">
+          <table id="previewTable">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        const state = {
+          headers: [],
+          rows: [],
+          resultsByMode: {
+            email: null,
+            phone: null,
+            both: null
+          },
+          activeMode: 'both',
+          countryMaps: null
+        };
+
+        const contactsFile = document.getElementById('contactsFile');
+        const countriesFile = document.getElementById('countriesFile');
+        const phoneCol = document.getElementById('phoneCol');
+        const emailCol = document.getElementById('emailCol');
+        const countryCol = document.getElementById('countryCol');
+        const defaultCode = document.getElementById('defaultCode');
+        const appendCols = document.getElementById('appendCols');
+        const tagValue = document.getElementById('tagValue');
+        const previewMode = document.getElementById('previewMode');
+        const cleanBtn = document.getElementById('cleanBtn');
+        const downloadEmailBtn = document.getElementById('downloadEmailBtn');
+        const downloadPhoneBtn = document.getElementById('downloadPhoneBtn');
+        const downloadBothBtn = document.getElementById('downloadBothBtn');
+        const message = document.getElementById('message');
+        const inputCount = document.getElementById('inputCount');
+        const outputCount = document.getElementById('outputCount');
+        const removedCount = document.getElementById('removedCount');
+        const previewHead = document.querySelector('#previewTable thead');
+        const previewBody = document.querySelector('#previewTable tbody');
+
+        const modeMeta = {
+          email: {
+            label: 'Email',
+            filename: 'cleaned_contacts_dedup_email.csv'
+          },
+          phone: {
+            label: 'Number',
+            filename: 'cleaned_contacts_dedup_number.csv'
+          },
+          both: {
+            label: 'Email OR Number',
+            filename: 'cleaned_contacts_dedup_email_or_number.csv'
+          }
+        };
+
+        const phoneCandidates = [
+          'phone',
+          'phonenumber',
+          'number',
+          'mobile',
+          'mobilenumber',
+          'whatsapp',
+          'tel',
+          'telephone',
+          'cell',
+          'contactnumber'
+        ];
+        const emailCandidates = ['email', 'emailaddress', 'mail'];
+        const countryCandidates = ['country', 'countryname', 'countrycode', 'nationality', 'iso2', 'iso3', 'dialcode'];
+
+        const domainFixes = {
+          'gamil.com': 'gmail.com',
+          'gmial.com': 'gmail.com',
+          'gmail.con': 'gmail.com',
+          'gnail.com': 'gmail.com',
+          'hotnail.com': 'hotmail.com',
+          'yaho.com': 'yahoo.com'
+        };
+
+        const noTldFixes = {
+          gmail: 'gmail.com',
+          yahoo: 'yahoo.com',
+          hotmail: 'hotmail.com',
+          outlook: 'outlook.com',
+          live: 'live.com',
+          icloud: 'icloud.com'
+        };
+
+        const delimiterCandidates = [',', ';', '\t', '|'];
+        const DEFAULT_DIAL_CODES = [
+          '441481', '441534', '441624', '1242', '1246', '1264', '1268', '1284', '1340', '1345', '1441', '1473',
+          '1649', '1664', '1670', '1671', '1684', '1721', '1758', '1767', '1784', '1787', '1809', '1829', '1849',
+          '1868', '1869', '1876', '1939', '211', '212', '213', '216', '218', '220', '221', '222', '223', '224',
+          '225', '226', '227', '228', '229', '230', '231', '232', '233', '234', '235', '236', '237', '238', '239',
+          '240', '241', '242', '243', '244', '245', '246', '248', '249', '250', '251', '252', '253', '254', '255',
+          '256', '257', '258', '260', '261', '262', '263', '264', '265', '266', '267', '268', '269', '290', '291',
+          '297', '298', '299', '350', '351', '352', '353', '354', '355', '356', '357', '358', '359', '370', '371',
+          '372', '373', '374', '375', '376', '377', '378', '379', '380', '381', '382', '383', '385', '386', '387',
+          '389', '420', '421', '423', '500', '501', '502', '503', '504', '505', '506', '507', '508', '509', '590',
+          '591', '592', '593', '595', '597', '598', '599', '670', '672', '673', '674', '675', '676', '677', '678',
+          '679', '680', '681', '682', '683', '685', '686', '687', '688', '689', '690', '691', '692', '850', '852',
+          '853', '855', '856', '880', '886', '960', '961', '962', '963', '964', '965', '966', '967', '968', '970',
+          '971', '972', '973', '974', '975', '976', '977', '992', '993', '994', '995', '996', '998', '20', '27',
+          '30', '31', '32', '33', '34', '36', '39', '40', '41', '43', '44', '45', '46', '47', '48', '49', '51',
+          '52', '53', '54', '55', '56', '57', '58', '60', '61', '62', '63', '64', '65', '66', '81', '82', '84',
+          '86', '90', '91', '92', '93', '94', '95', '98', '1', '7'
+        ];
+
+        class DisjointSet {
+          constructor(size) {
+            this.parent = Array.from({ length: size }, (_, i) => i);
+            this.rank = Array(size).fill(0);
+          }
+          find(x) {
+            if (this.parent[x] !== x) {
+              this.parent[x] = this.find(this.parent[x]);
+            }
+            return this.parent[x];
+          }
+          union(a, b) {
+            let ra = this.find(a);
+            let rb = this.find(b);
+            if (ra === rb) return;
+            if (this.rank[ra] < this.rank[rb]) {
+              this.parent[ra] = rb;
+            } else if (this.rank[ra] > this.rank[rb]) {
+              this.parent[rb] = ra;
+            } else {
+              this.parent[rb] = ra;
+              this.rank[ra] += 1;
+            }
+          }
+        }
+
+        const canonical = (v) => (v || '').toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+        const present = (v) => v !== null && v !== undefined && v.toString().trim() !== '';
+        const normalizeDigits = (v) => (v || '').toString().replace(/\D/g, '');
+        const escapeRegExp = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        function looksLikeUtf16(bytes) {
+          const sample = Math.min(bytes.length, 4096);
+          if (sample < 4) return '';
+
+          let zeroEven = 0;
+          let zeroOdd = 0;
+          for (let i = 0; i < sample; i += 1) {
+            if (bytes[i] === 0) {
+              if (i % 2 === 0) zeroEven += 1;
+              else zeroOdd += 1;
+            }
+          }
+
+          const pairs = Math.floor(sample / 2) || 1;
+          const evenRatio = zeroEven / pairs;
+          const oddRatio = zeroOdd / pairs;
+          if (oddRatio > 0.25 && oddRatio > evenRatio) return 'utf-16le';
+          if (evenRatio > 0.25 && evenRatio > oddRatio) return 'utf-16be';
+          return '';
+        }
+
+        async function readTextSmart(file) {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          let encoding = 'utf-8';
+
+          if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
+            encoding = 'utf-8';
+          } else if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+            encoding = 'utf-16le';
+          } else if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+            encoding = 'utf-16be';
+          } else {
+            const guessed = looksLikeUtf16(bytes);
+            if (guessed) encoding = guessed;
+          }
+
+          const text = new TextDecoder(encoding).decode(bytes);
+          return { text, encoding };
+        }
+
+        function countDelimiterOutsideQuotes(line, delimiter) {
+          let count = 0;
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i += 1) {
+            const char = line[i];
+            if (char === '"') {
+              if (inQuotes && line[i + 1] === '"') {
+                i += 1;
+              } else {
+                inQuotes = !inQuotes;
+              }
+              continue;
+            }
+            if (!inQuotes && char === delimiter) count += 1;
+          }
+          return count;
+        }
+
+        function detectDelimiter(content) {
+          const lines = content
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .slice(0, 25);
+
+          if (!lines.length) return ',';
+
+          let bestDelimiter = ',';
+          let bestScore = Number.NEGATIVE_INFINITY;
+
+          delimiterCandidates.forEach((delimiter) => {
+            const counts = lines.map((line) => countDelimiterOutsideQuotes(line, delimiter));
+            const nonZeroLines = counts.filter((c) => c > 0).length;
+            const avg = counts.reduce((sum, c) => sum + c, 0) / counts.length;
+            const variance = counts.reduce((sum, c) => sum + ((c - avg) ** 2), 0) / counts.length;
+            const score = (nonZeroLines * 100) + (avg * 10) - variance;
+
+            if (score > bestScore) {
+              bestScore = score;
+              bestDelimiter = delimiter;
+            }
+          });
+
+          return bestScore <= 0 ? ',' : bestDelimiter;
+        }
+
+        function parseWithDelimiter(content, delimiter) {
+          const rows = [];
+          let row = [];
+          let cell = '';
+          let inQuotes = false;
+          for (let i = 0; i < content.length; i += 1) {
+            const char = content[i];
+
+            if (inQuotes) {
+              if (char === '"') {
+                if (content[i + 1] === '"') {
+                  cell += '"';
+                  i += 1;
+                } else {
+                  inQuotes = false;
+                }
+              } else {
+                cell += char;
+              }
+              continue;
+            }
+
+            if (char === '"') {
+              inQuotes = true;
+            } else if (char === delimiter) {
+              row.push(cell);
+              cell = '';
+            } else if (char === '\n') {
+              row.push(cell);
+              rows.push(row);
+              row = [];
+              cell = '';
+            } else if (char === '\r') {
+              continue;
+            } else {
+              cell += char;
+            }
+          }
+          row.push(cell);
+          rows.push(row);
+          return rows;
+        }
+
+        function delimiterLabel(delimiter) {
+          if (delimiter === '\t') return 'tab';
+          if (delimiter === ';') return 'semicolon';
+          if (delimiter === '|') return 'pipe';
+          return 'comma';
+        }
+
+        function parseCsv(text) {
+          const content = text.replace(/^\uFEFF/, '').replace(/\u0000/g, '');
+          const guessedDelimiter = detectDelimiter(content);
+          let chosenDelimiter = guessedDelimiter;
+          let parsedRows = parseWithDelimiter(content, guessedDelimiter);
+
+          delimiterCandidates.forEach((delimiter) => {
+            if (delimiter === guessedDelimiter) return;
+            const candidateRows = parseWithDelimiter(content, delimiter);
+            const candidateWidth = candidateRows[0] ? candidateRows[0].length : 0;
+            const currentWidth = parsedRows[0] ? parsedRows[0].length : 0;
+            if (candidateWidth > currentWidth) {
+              parsedRows = candidateRows;
+              chosenDelimiter = delimiter;
+            }
+          });
+
+          const cleaned = parsedRows.filter((r) => r.some((c) => c.trim() !== ''));
+          if (!cleaned.length) {
+            return { headers: [], rows: [], delimiter: chosenDelimiter, delimiterName: delimiterLabel(chosenDelimiter) };
+          }
+
+          const headers = cleaned[0].map((h) => h.trim());
+          const data = cleaned.slice(1).map((r) => {
+            const obj = {};
+            headers.forEach((h, idx) => {
+              obj[h] = (r[idx] ?? '').trim();
+            });
+            return obj;
+          });
+
+          return { headers, rows: data, delimiter: chosenDelimiter, delimiterName: delimiterLabel(chosenDelimiter) };
+        }
+
+        function toCsv(headers, rows) {
+          const escape = (v) => {
+            const value = (v ?? '').toString();
+            if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+            return value;
+          };
+          const lines = [headers.map(escape).join(',')];
+          rows.forEach((row) => {
+            lines.push(headers.map((h) => escape(row[h])).join(','));
+          });
+          return lines.join('\n');
+        }
+
+        function detectColumn(headers, candidates) {
+          const keys = headers.map((h) => ({ key: canonical(h), value: h }));
+          for (const candidate of candidates) {
+            const exact = keys.find((item) => item.key === candidate);
+            if (exact) return exact.value;
+          }
+          for (const item of keys) {
+            if (candidates.some((candidate) => item.key.includes(candidate))) return item.value;
+          }
+          return '';
+        }
+
+        function fillSelect(select, headers, preferred, allowEmpty = true) {
+          select.innerHTML = '';
+          if (allowEmpty) {
+            const blank = document.createElement('option');
+            blank.value = '';
+            blank.textContent = 'Not selected';
+            select.appendChild(blank);
+          }
+          headers.forEach((h) => {
+            const opt = document.createElement('option');
+            opt.value = h;
+            opt.textContent = h;
+            select.appendChild(opt);
+          });
+          if (preferred && headers.includes(preferred)) {
+            select.value = preferred;
+          }
+        }
+
+        function buildBaseCountryMaps() {
+          const codesSorted = Array.from(new Set(DEFAULT_DIAL_CODES)).sort((a, b) => b.length - a.length);
+          return {
+            codesSorted,
+            countryToCode: new Map(),
+            isoToCode: new Map(),
+            countryPairs: []
+          };
+        }
+
+        function parseCountryGuide(rows, headers) {
+          const base = buildBaseCountryMaps();
+          const countryHeader = detectColumn(headers, ['country']);
+          const codeHeader = detectColumn(headers, ['code', 'dialcode', 'callingcode']);
+          const symbolHeader = detectColumn(headers, ['symbol', 'iso']);
+
+          if (!countryHeader || !codeHeader) {
+            return base;
+          }
+
+          const countryToCode = new Map();
+          const isoToCode = new Map();
+          const codeSet = new Set(base.codesSorted);
+
+          rows.forEach((row) => {
+            const country = row[countryHeader];
+            const rawCode = row[codeHeader] || '';
+            const parsedCodes = rawCode
+              .toString()
+              .split(/[\/,;]/)
+              .map((part) => normalizeDigits(part))
+              .filter((code) => present(code));
+
+            if (!parsedCodes.length) return;
+
+            parsedCodes.forEach((code) => codeSet.add(code));
+
+            const primaryCode = parsedCodes[0];
+            if (present(country)) countryToCode.set(canonical(country), primaryCode);
+
+            if (symbolHeader && present(primaryCode)) {
+              (row[symbolHeader] || '')
+                .split('/')
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .forEach((symbol) => {
+                  isoToCode.set(canonical(symbol), primaryCode);
+                });
+            }
+          });
+
+          const codesSorted = Array.from(codeSet).sort((a, b) => b.length - a.length);
+          const countryPairs = Array.from(countryToCode.entries());
+          return { codesSorted, countryToCode, isoToCode, countryPairs };
+        }
+
+        state.countryMaps = buildBaseCountryMaps();
+
+        function resolveCountryCode(hint, maps) {
+          if (!present(hint)) return '';
+          const asDigits = normalizeDigits(hint);
+          if (present(asDigits)) return asDigits;
+
+          const key = canonical(hint);
+          if (maps.countryToCode.has(key)) return maps.countryToCode.get(key);
+          if (maps.isoToCode.has(key)) return maps.isoToCode.get(key);
+
+          for (const [countryKey, code] of maps.countryPairs) {
+            if (countryKey.includes(key) || key.includes(countryKey)) return code;
+          }
+          return '';
+        }
+
+        function inferCountryCode(digits, maps) {
+          return maps.codesSorted.find((code) => digits.startsWith(code)) || '';
+        }
+
+        function cleanPhone(raw, hint, maps, defaultCountryCode) {
+          let digits = normalizeDigits(raw);
+          if (!present(digits)) return '';
+
+          digits = digits.replace(/^00+/, '');
+          if (digits.length > 6) digits = digits.replace(/^011/, '');
+
+          let code = resolveCountryCode(hint, maps) || inferCountryCode(digits, maps) || defaultCountryCode;
+
+          if (present(code)) {
+            if (!digits.startsWith(code) && /^0+/.test(digits)) {
+              const local = digits.replace(/^0+/, '');
+              if (present(local)) digits = code + local;
+            }
+
+            const repeated = new RegExp(`^(?:${escapeRegExp(code)}){2,}`);
+            if (repeated.test(digits)) {
+              const rest = digits.replace(new RegExp(`^(?:${escapeRegExp(code)})+`), '');
+              digits = code + rest;
+            }
+
+            if (digits.startsWith(code)) {
+              const rawRest = digits.slice(code.length);
+              if (/[1-9]/.test(rawRest)) {
+                const rest = rawRest.replace(/^0+/, '');
+                digits = code + rest;
+              } else {
+                // Keep all-zero local parts; user asked to keep cleaned digits even if invalid-looking.
+                digits = code + rawRest;
+              }
+            }
+          }
+
+          const inferredAgain = inferCountryCode(digits, maps);
+          if (present(inferredAgain)) {
+            const repeated = new RegExp(`^(?:${escapeRegExp(inferredAgain)}){2,}`);
+            if (repeated.test(digits)) {
+              const rest = digits.replace(new RegExp(`^(?:${escapeRegExp(inferredAgain)})+`), '');
+              digits = inferredAgain + rest;
+            }
+          }
+
+          return digits;
+        }
+
+        function cleanEmail(raw) {
+          let email = (raw || '').toString().trim().toLowerCase();
+          if (!present(email)) return '';
+
+          email = email.replace(/\s+/g, '').replace(/،/g, ',').replace(/[;,]/g, '.').replace(/\.+/g, '.');
+          const parts = email.split('@');
+          if (parts.length !== 2) return '';
+
+          const local = parts[0].trim();
+          let domain = parts[1].trim();
+          if (!present(local) || !present(domain)) return '';
+
+          domain = domain.replace(/^\.+|\.+$/g, '');
+          if (domainFixes[domain]) domain = domainFixes[domain];
+          if (!domain.includes('.') && noTldFixes[domain]) domain = noTldFixes[domain];
+          domain = domain.replace(/\.+/g, '.');
+
+          const cleaned = `${local}@${domain}`;
+          return /^[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+$/i.test(cleaned) ? cleaned : '';
+        }
+
+        function scoreRecord(rec, headers) {
+          let score = 0;
+          if (present(rec.cleanPhone)) score += 1000;
+          if (present(rec.cleanEmail)) score += 1000;
+          headers.forEach((h) => {
+            if (present(rec.data[h])) score += 1;
+          });
+          return score;
+        }
+
+        function modeUsesPhone(mode, selectedPhone) {
+          return Boolean(selectedPhone) && (mode === 'phone' || mode === 'both');
+        }
+
+        function modeUsesEmail(mode, selectedEmail) {
+          return Boolean(selectedEmail) && (mode === 'email' || mode === 'both');
+        }
+
+        function prepareRows(rows, selectedPhone, selectedEmail, selectedCountry, activeCountryMaps, fallbackCode) {
+          return rows.map((row, idx) => {
+            const hint = selectedCountry ? row[selectedCountry] : '';
+            return {
+              idx,
+              data: { ...row },
+              cleanPhone: selectedPhone ? cleanPhone(row[selectedPhone], hint, activeCountryMaps, fallbackCode) : '',
+              cleanEmail: selectedEmail ? cleanEmail(row[selectedEmail]) : ''
+            };
+          });
+        }
+
+        function dedupePrepared(prepared, mode, selectedPhone, selectedEmail, mergeHeaders, includeNormalizedColumns, providedTag) {
+          const dsu = new DisjointSet(prepared.length);
+          const byPhone = new Map();
+          const byEmail = new Map();
+          const usePhone = modeUsesPhone(mode, selectedPhone);
+          const useEmail = modeUsesEmail(mode, selectedEmail);
+
+          prepared.forEach((rec, idx) => {
+            if (usePhone && present(rec.cleanPhone)) {
+              if (byPhone.has(rec.cleanPhone)) dsu.union(idx, byPhone.get(rec.cleanPhone));
+              else byPhone.set(rec.cleanPhone, idx);
+            }
+
+            if (useEmail && present(rec.cleanEmail)) {
+              if (byEmail.has(rec.cleanEmail)) dsu.union(idx, byEmail.get(rec.cleanEmail));
+              else byEmail.set(rec.cleanEmail, idx);
+            }
+          });
+
+          const grouped = new Map();
+          prepared.forEach((_, idx) => {
+            const root = dsu.find(idx);
+            if (!grouped.has(root)) grouped.set(root, []);
+            grouped.get(root).push(idx);
+          });
+
+          const kept = [];
+          grouped.forEach((indices) => {
+            let best = indices[0];
+            indices.forEach((idx) => {
+              const left = scoreRecord(prepared[idx], mergeHeaders);
+              const right = scoreRecord(prepared[best], mergeHeaders);
+              if (left > right || (left === right && idx > best)) best = idx;
+            });
+
+            const merged = { ...prepared[best].data };
+            indices.forEach((idx) => {
+              if (idx === best) return;
+              mergeHeaders.forEach((h) => {
+                if (!present(merged[h]) && present(prepared[idx].data[h])) merged[h] = prepared[idx].data[h];
+              });
+            });
+
+            let groupPhone = prepared[best].cleanPhone;
+            let groupEmail = prepared[best].cleanEmail;
+            if (!present(groupPhone)) groupPhone = indices.map((idx) => prepared[idx].cleanPhone).find((v) => present(v)) || '';
+            if (!present(groupEmail)) groupEmail = indices.map((idx) => prepared[idx].cleanEmail).find((v) => present(v)) || '';
+
+            // Always write cleaned phone/email values when these columns exist.
+            if (selectedPhone && present(groupPhone)) merged[selectedPhone] = groupPhone;
+            if (selectedEmail && present(groupEmail)) merged[selectedEmail] = groupEmail;
+
+            if (includeNormalizedColumns) {
+              merged.normalized_phone = groupPhone;
+              merged.normalized_email = groupEmail;
+            }
+
+            if (present(providedTag)) {
+              merged.TAG = providedTag;
+            } else if (!present(merged.TAG)) {
+              merged.TAG = '';
+            }
+
+            kept.push({ source: best, row: merged });
+          });
+
+          kept.sort((a, b) => a.source - b.source);
+          return kept.map((x) => x.row);
+        }
+
+        function verifyAndFixDuplicates(rows, mode, selectedPhone, selectedEmail, selectedCountry, activeCountryMaps, fallbackCode, includeNormalizedColumns, outputHeaders, providedTag) {
+          let currentRows = rows;
+          let extraRemoved = 0;
+
+          // Secondary pass (up to 2 rounds) to ensure no leftovers.
+          for (let round = 0; round < 2; round += 1) {
+            const prepared = prepareRows(currentRows, selectedPhone, selectedEmail, selectedCountry, activeCountryMaps, fallbackCode);
+            const afterPass = dedupePrepared(
+              prepared,
+              mode,
+              selectedPhone,
+              selectedEmail,
+              outputHeaders,
+              includeNormalizedColumns,
+              providedTag
+            );
+
+            const removedNow = currentRows.length - afterPass.length;
+            if (removedNow <= 0) break;
+            extraRemoved += removedNow;
+            currentRows = afterPass;
+          }
+
+          return { rows: currentRows, extraRemoved };
+        }
+
+        function buildModeResult(mode, prepared, selectedPhone, selectedEmail, selectedCountry, activeCountryMaps, fallbackCode, includeNormalizedColumns, outputHeaders, providedTag) {
+          const firstPassRows = dedupePrepared(
+            prepared,
+            mode,
+            selectedPhone,
+            selectedEmail,
+            state.headers,
+            includeNormalizedColumns,
+            providedTag
+          );
+          const verified = verifyAndFixDuplicates(
+            firstPassRows,
+            mode,
+            selectedPhone,
+            selectedEmail,
+            selectedCountry,
+            activeCountryMaps,
+            fallbackCode,
+            includeNormalizedColumns,
+            outputHeaders,
+            providedTag
+          );
+
+          return {
+            rows: verified.rows,
+            headers: outputHeaders,
+            outputCount: verified.rows.length,
+            removedCount: state.rows.length - verified.rows.length,
+            verificationRemoved: verified.extraRemoved
+          };
+        }
+
+        function renderPreview(mode) {
+          state.activeMode = mode;
+          previewHead.innerHTML = '';
+          previewBody.innerHTML = '';
+
+          const result = state.resultsByMode[mode];
+          if (!result || !result.rows.length) {
+            outputCount.textContent = '0';
+            removedCount.textContent = '0';
+            return;
+          }
+
+          outputCount.textContent = result.outputCount.toString();
+          removedCount.textContent = result.removedCount.toString();
+
+          const headerRow = document.createElement('tr');
+          result.headers.forEach((h) => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            headerRow.appendChild(th);
+          });
+          previewHead.appendChild(headerRow);
+
+          result.rows.slice(0, 15).forEach((row) => {
+            const tr = document.createElement('tr');
+            result.headers.forEach((h) => {
+              const td = document.createElement('td');
+              td.textContent = row[h] || '';
+              tr.appendChild(td);
+            });
+            previewBody.appendChild(tr);
+          });
+        }
+
+        function downloadMode(mode) {
+          const result = state.resultsByMode[mode];
+          if (!result || !result.rows.length) return;
+          const csvText = toCsv(result.headers, result.rows);
+          const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = modeMeta[mode].filename;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+
+        function runCleaner() {
+          const selectedPhone = phoneCol.value;
+          const selectedEmail = emailCol.value;
+          const selectedCountry = countryCol.value;
+          const fallbackCode = normalizeDigits(defaultCode.value);
+          const providedTag = tagValue.value.toString().trim();
+
+          if (!state.rows.length) {
+            message.textContent = 'Please upload a contacts CSV first.';
+            return;
+          }
+
+          if (!selectedPhone) {
+            message.textContent = 'Select the phone column to continue. Phone cleaning is required for all 3 outputs.';
+            return;
+          }
+
+          const activeCountryMaps = state.countryMaps || buildBaseCountryMaps();
+          const includeNormalizedColumns = appendCols.value === 'yes';
+          const outputHeaders = includeNormalizedColumns
+            ? [...state.headers, 'normalized_phone', 'normalized_email']
+            : [...state.headers];
+          if (!outputHeaders.includes('TAG')) {
+            outputHeaders.push('TAG');
+          }
+
+          const prepared = prepareRows(
+            state.rows,
+            selectedPhone,
+            selectedEmail,
+            selectedCountry,
+            activeCountryMaps,
+            fallbackCode
+          );
+
+          state.resultsByMode.email = buildModeResult(
+            'email',
+            prepared,
+            selectedPhone,
+            selectedEmail,
+            selectedCountry,
+            activeCountryMaps,
+            fallbackCode,
+            includeNormalizedColumns,
+            outputHeaders,
+            providedTag
+          );
+          state.resultsByMode.phone = buildModeResult(
+            'phone',
+            prepared,
+            selectedPhone,
+            selectedEmail,
+            selectedCountry,
+            activeCountryMaps,
+            fallbackCode,
+            includeNormalizedColumns,
+            outputHeaders,
+            providedTag
+          );
+          state.resultsByMode.both = buildModeResult(
+            'both',
+            prepared,
+            selectedPhone,
+            selectedEmail,
+            selectedCountry,
+            activeCountryMaps,
+            fallbackCode,
+            includeNormalizedColumns,
+            outputHeaders,
+            providedTag
+          );
+
+          inputCount.textContent = state.rows.length.toString();
+          renderPreview(previewMode.value || 'both');
+
+          const emailRemoved = state.resultsByMode.email.removedCount;
+          const phoneRemoved = state.resultsByMode.phone.removedCount;
+          const bothRemoved = state.resultsByMode.both.removedCount;
+          const verificationTotal =
+            state.resultsByMode.email.verificationRemoved +
+            state.resultsByMode.phone.verificationRemoved +
+            state.resultsByMode.both.verificationRemoved;
+          const emailHint = selectedEmail ? '' : ' Email column is not selected, so email-based dedupe cannot remove rows.';
+          const tagHint = present(providedTag) ? ` TAG applied: ${providedTag}.` : ' TAG column added with empty values.';
+
+          if (verificationTotal > 0) {
+            message.textContent = `Done. Email dedupe removed ${emailRemoved}, Number dedupe removed ${phoneRemoved}, Email OR Number removed ${bothRemoved}. Verification pass removed ${verificationTotal} extra duplicates.${emailHint}${tagHint}`;
+          } else {
+            message.textContent = `Done. Email dedupe removed ${emailRemoved}, Number dedupe removed ${phoneRemoved}, Email OR Number removed ${bothRemoved}. Verification pass found no leftover duplicates.${emailHint}${tagHint}`;
+          }
+
+          downloadEmailBtn.disabled = !state.resultsByMode.email.rows.length;
+          downloadPhoneBtn.disabled = !state.resultsByMode.phone.rows.length;
+          downloadBothBtn.disabled = !state.resultsByMode.both.rows.length;
+        }
+
+        contactsFile.addEventListener('change', async (event) => {
+          const file = event.target.files[0];
+          if (!file) return;
+          const loaded = await readTextSmart(file);
+          const parsed = parseCsv(loaded.text);
+          state.headers = parsed.headers;
+          state.rows = parsed.rows;
+          state.resultsByMode.email = null;
+          state.resultsByMode.phone = null;
+          state.resultsByMode.both = null;
+
+          const autoPhone = detectColumn(state.headers, phoneCandidates);
+          const autoEmail = detectColumn(state.headers, emailCandidates);
+          const autoCountry = detectColumn(state.headers, countryCandidates);
+
+          fillSelect(phoneCol, state.headers, autoPhone);
+          fillSelect(emailCol, state.headers, autoEmail);
+          fillSelect(countryCol, state.headers, autoCountry);
+
+          cleanBtn.disabled = false;
+          downloadEmailBtn.disabled = true;
+          downloadPhoneBtn.disabled = true;
+          downloadBothBtn.disabled = true;
+          inputCount.textContent = state.rows.length.toString();
+          outputCount.textContent = '0';
+          removedCount.textContent = '0';
+          message.textContent = `Loaded ${state.rows.length} rows from contacts CSV (${parsed.delimiterName} delimiter, ${loaded.encoding}).`;
+          previewHead.innerHTML = '';
+          previewBody.innerHTML = '';
+        });
+
+        countriesFile.addEventListener('change', async (event) => {
+          const file = event.target.files[0];
+          if (!file) return;
+          const loaded = await readTextSmart(file);
+          const parsed = parseCsv(loaded.text);
+          state.countryMaps = parseCountryGuide(parsed.rows, parsed.headers);
+
+          message.textContent = `Loaded country guide (${parsed.delimiterName} delimiter, ${loaded.encoding}). Active dialing codes: ${state.countryMaps.codesSorted.length}.`;
+        });
+
+        cleanBtn.addEventListener('click', runCleaner);
+        previewMode.addEventListener('change', () => renderPreview(previewMode.value));
+        downloadEmailBtn.addEventListener('click', () => downloadMode('email'));
+        downloadPhoneBtn.addEventListener('click', () => downloadMode('phone'));
+        downloadBothBtn.addEventListener('click', () => downloadMode('both'));
+
+        fillSelect(phoneCol, [], '', true);
+        fillSelect(emailCol, [], '', true);
+        fillSelect(countryCol, [], '', true);
+      })();
+    </script>
+  </body>
+</html>
